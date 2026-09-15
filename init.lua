@@ -74,8 +74,8 @@ vim.opt.scrolloff = 10
 
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
-vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
-vim.keymap.set('n', '<leader>e', '<cmd>Oil<CR>')
+vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>', { desc = 'Clear search highlight' })
+vim.keymap.set('n', '<leader>e', '<cmd>Oil<CR>', { desc = 'Open [E]xplorer (Oil)' })
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
@@ -233,7 +233,8 @@ require('lazy').setup({
         { '<leader>s', group = '[S]earch' },
         { '<leader>w', group = '[W]orkspace' },
         { '<leader>t', group = '[T]oggle' },
-        { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<leader>h', group = '[H]arpoon' },
+        { '<leader>l', group = '[L]SP' },
       },
     },
   },
@@ -338,31 +339,31 @@ require('lazy').setup({
 
       vim.keymap.set('n', '<leader>ha', function()
         harpoon:list():add()
-      end)
+      end, { desc = '[H]arpoon [A]dd file' })
       vim.keymap.set('n', '<leader>ht', function()
         harpoon.ui:toggle_quick_menu(harpoon:list())
-      end)
+      end, { desc = '[H]arpoon [T]oggle quick menu' })
 
       vim.keymap.set('n', '<leader>1', function()
         harpoon:list():select(1)
-      end)
+      end, { desc = 'Harpoon file [1]' })
       vim.keymap.set('n', '<leader>2', function()
         harpoon:list():select(2)
-      end)
+      end, { desc = 'Harpoon file [2]' })
       vim.keymap.set('n', '<leader>3', function()
         harpoon:list():select(3)
-      end)
+      end, { desc = 'Harpoon file [3]' })
       vim.keymap.set('n', '<leader>4', function()
         harpoon:list():select(4)
-      end)
+      end, { desc = 'Harpoon file [4]' })
 
       -- Toggle previous & next buffers stored within Harpoon list
       vim.keymap.set('n', '<leader>hk', function()
         harpoon:list():prev()
-      end)
+      end, { desc = '[H]arpoon previous buffer' })
       vim.keymap.set('n', '<leader>hj', function()
         harpoon:list():next()
-      end)
+      end, { desc = '[H]arpoon next buffer' })
     end,
   },
   -- LSP Plugins
@@ -413,6 +414,7 @@ require('lazy').setup({
           --  This is where a variable was first declared, or where a function is defined, etc.
           --  To jump back, press <C-t>.
           map('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+          map('<leader>ld', require('telescope.builtin').lsp_definitions, '[L]sp [D]efinition')
 
           -- Find references for the word under your cursor.
           map('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
@@ -420,31 +422,38 @@ require('lazy').setup({
           -- Jump to the implementation of the word under your cursor.
           --  Useful when your language has ways of declaring types without an actual implementation.
           map('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
+          map('<leader>li', require('telescope.builtin').lsp_implementations, '[L]sp [I]mplementation')
 
           -- Jump to the type of the word under your cursor.
           --  Useful when you're not sure what type a variable is and you want to see
           --  the definition of its *type*, not where it was *defined*.
           map('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
+          map('<leader>lt', require('telescope.builtin').lsp_type_definitions, '[L]sp [T]ype Definition')
 
           -- Fuzzy find all the symbols in your current document.
           --  Symbols are things like variables, functions, types, etc.
           map('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+          map('<leader>ls', require('telescope.builtin').lsp_document_symbols, '[L]sp Document [S]ymbols')
 
           -- Fuzzy find all the symbols in your current workspace.
           --  Similar to document symbols, except searches over your entire project.
           map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
+          map('<leader>lS', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[L]sp Workspace [S]ymbols')
 
           -- Rename the variable under your cursor.
           --  Most Language Servers support renaming across files, etc.
           map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+          map('<leader>lr', vim.lsp.buf.rename, '[L]sp [R]ename')
 
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
           map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction', { 'n', 'x' })
+          map('<leader>la', vim.lsp.buf.code_action, '[L]sp [A]ction', { 'n', 'x' })
 
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header.
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+          map('<leader>lD', vim.lsp.buf.declaration, '[L]sp [D]eclaration')
 
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
@@ -452,7 +461,7 @@ require('lazy').setup({
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
           local client = vim.lsp.get_client_by_id(event.data.client_id)
-          if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
+          if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
             local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
               buffer = event.buf,
@@ -479,10 +488,13 @@ require('lazy').setup({
           -- code, if the language server you are using supports them
           --
           -- This may be unwanted, since they displace some of your code
-          if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
+          if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
             map('<leader>th', function()
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
             end, '[T]oggle Inlay [H]ints')
+            map('<leader>lh', function()
+              vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
+            end, '[L]sp Toggle Inlay [H]ints')
           end
         end,
       })
@@ -753,28 +765,29 @@ require('lazy').setup({
   },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    lazy = false,
     build = ':TSUpdate',
-    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
-    -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-    opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
-      -- Autoinstall languages that are not installed
-      auto_install = true,
-      highlight = {
-        enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-        --  If you are experiencing weird indenting issues, add the language to
-        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        additional_vim_regex_highlighting = { 'ruby' },
-      },
-      indent = { enable = true, disable = { 'ruby' } },
-    },
-    -- There are additional nvim-treesitter modules that you can use to interact
-    -- with nvim-treesitter. You should go explore a few and see what interests you:
-    --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+    config = function()
+      local ts = require 'nvim-treesitter'
+      ts.setup()
+
+      -- Install and update desired parsers
+      ts.install { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+
+      -- Enable Treesitter highlighting and indentation for buffers
+      vim.api.nvim_create_autocmd('FileType', {
+        callback = function(args)
+          -- Start treesitter highlighting if parser is available
+          pcall(vim.treesitter.start, args.buf)
+          -- Enable treesitter-based indentation (skip ruby where regex indent is preferred)
+          if vim.bo[args.buf].filetype ~= 'ruby' then
+            pcall(function()
+              vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+            end)
+          end
+        end,
+      })
+    end,
   },
   {
     'stevearc/oil.nvim',
