@@ -5,6 +5,10 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 vim.g.lazyvim_check_order = false
 
+-- Disable default keymaps from runtime ftplugin/ocaml.vim so <LocalLeader>s
+-- does not hijack Telescope's <leader>s search mappings in OCaml files
+vim.g.no_ocaml_maps = 1
+
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
 
@@ -16,6 +20,9 @@ vim.g.have_nerd_font = true
 -- Make line numbers default
 vim.opt.number = true
 vim.opt.relativenumber = true
+
+-- Use rounded borders for all floating windows by default
+vim.opt.winborder = 'rounded'
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -80,6 +87,12 @@ vim.keymap.set('n', '<leader>e', '<cmd>Oil<CR>', { desc = 'Open [E]xplorer (Oil)
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', 'gl', function()
+  vim.diagnostic.open_float { border = 'rounded' }
+end, { desc = 'Show line diagnostics' })
+vim.keymap.set('n', '<leader>le', function()
+  vim.diagnostic.open_float { border = 'rounded' }
+end, { desc = '[L]sp Line [E]rror / Diagnostics' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -399,6 +412,11 @@ require('lazy').setup({
       'hrsh7th/cmp-nvim-lsp',
     },
     config = function()
+      -- Configure floating window borders for diagnostics
+      vim.diagnostic.config {
+        float = { border = 'rounded' },
+      }
+
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
         callback = function(event)
@@ -484,6 +502,26 @@ require('lazy').setup({
                 vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
               end,
             })
+          end
+
+          -- OCaml implementation / interface switching under <leader>ls
+          if vim.bo[event.buf].filetype == 'ocaml' or vim.bo[event.buf].filetype == 'ocamlinterface' then
+            map('<leader>lsi', function()
+              if vim.fn.exists ':LspOcamllspSwitchImplIntf' == 2 then
+                vim.cmd 'LspOcamllspSwitchImplIntf'
+              else
+                vim.cmd 'normal \x1c\x0eo<Plug>OCamlSwitchEdit'
+              end
+            end, '[L]sp [S]witch [I]nterface/Implementation')
+
+            map('<leader>lsI', function()
+              vim.cmd 'split'
+              if vim.fn.exists ':LspOcamllspSwitchImplIntf' == 2 then
+                vim.cmd 'LspOcamllspSwitchImplIntf'
+              else
+                vim.cmd 'normal \x1c\x0eo<Plug>OCamlSwitchEdit'
+              end
+            end, '[L]sp [S]witch [I]nterface/Implementation (split)')
           end
 
           -- The following code creates a keymap to toggle inlay hints in your
@@ -652,6 +690,10 @@ require('lazy').setup({
           end,
         },
         completion = { completeopt = 'menu,menuone,noinsert' },
+        window = {
+          completion = cmp.config.window.bordered { border = 'rounded' },
+          documentation = cmp.config.window.bordered { border = 'rounded' },
+        },
 
         -- For an understanding of why these mappings were
         -- chosen, you will need to read `:help ins-completion`
